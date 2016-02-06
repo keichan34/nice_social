@@ -23,11 +23,11 @@ if(!Array.prototype.indexOf) {
         return -1;
     };
 }
-jQuery.fn.scrollTo = function(elem, speed) { 
+jQuery.fn.scrollTo = function(elem, speed) {
     $(this).animate({
-        scrollTop:  $(this).scrollTop() - $(this).offset().top + $(elem).offset().top 
-    }, speed === undefined ? 1000 : speed); 
-    return this; 
+        scrollTop:  $(this).scrollTop() - $(this).offset().top + $(elem).offset().top
+    }, speed === undefined ? 1000 : speed);
+    return this;
 };
 jQuery(function($) {
     window.store = new Object();
@@ -72,14 +72,14 @@ jQuery(function($) {
         }
         doHandyTextSwitch();
     });
-    $("#rpy-text").keydown(function (event) { 
-        if ( (event.metaKey || event.ctrlKey) && event.keyCode === KEY_ENTER ) { 
+    $("#rpy-text").keydown(function (event) {
+        if ( (event.metaKey || event.ctrlKey) && event.keyCode === KEY_ENTER ) {
             sendPost();
         }
         if ( $('#autocomp').hasClass('show') && event.keyCode === KEY_DOWNARROW) {
             $('#autocomp > .autobox > span:first-child').trigger("click");
             return false;
-        } 
+        }
     });
     $(document).keyup(function(e) {
         if( $('#response').hasClass('hide') ) {
@@ -191,7 +191,7 @@ window.addEventListener('load', function(){
             isLeftSwipe = (elapsedTime <= allowedTime && dist_l >= threshold && Math.abs(touchobj.pageY - startY) <= 100);
         handleswipe(isRightSwipe, isLeftSwipe);
         if ( isRightSwipe || isLeftSwipe ) { e.preventDefault(); }
-    }, false); 
+    }, false);
 }, false);
 document.getElementById('file').addEventListener('change', function(e) {
     var access_token = readStorage('access_token');
@@ -213,7 +213,7 @@ function loadConfigFile() {
 }
 function getFileObjectByType( file ) {
     var fileObj = false;
-    
+
     switch ( file.type ) {
         case 'audio/x-m4a':
         case 'audio/mpeg':
@@ -227,7 +227,7 @@ function getFileObjectByType( file ) {
                         'public': true
                        };
             break;
-        
+
         default:
             fileObj = { 'anno': "net.app.core.oembed",
                         'kind': "photo",
@@ -239,15 +239,15 @@ function getFileObjectByType( file ) {
     }
     return fileObj;
 }
+function updateTimestampRefresh() {
+    updateTimestamps();
+    setTimeout(updateTimestampRefresh, 15000);
+}
 function continueLoadProcess() {
     if ( prepApp() ) {
-        window.setInterval(function(){
-            getGlobalItems();
-            redrawList();
-        }, 1000);
-        window.setInterval(function(){ collectRankSummary(); }, 60*60*1000);
-        window.setInterval(function(){ updateTimestamps(); }, 15000);
-        window.setInterval(function(){ testInfiniteLoop(); }, 1000);
+        window.setTimeout(getGlobalItems, readStorage('refresh_rate') * 1000);
+
+        updateTimestampRefresh();
 
         /* Add the Moment.js Resources if Required */
         loadMomentIfRequired();
@@ -256,21 +256,9 @@ function continueLoadProcess() {
         showTimelines();
         collectRankSummary();
         getGlobalRecents();
-    }
-}
-function testInfiniteLoop() {
-    last_ts = readStorage('last_global_query', true);
-    if ( last_ts !== false ) {
-        var refresh_rate = parseInt(readStorage('refresh_rate'));
-        var curr_ts = new Date().getTime();
-        if ( (curr_ts - last_ts) > (refresh_rate * 1000) ) {
-            if ( (curr_ts - last_ts) >= (refresh_rate * 2000) ) {
-                var ts = new Date().getTime();
-                saveStorage('last_global_query', ts, true);
-                window.setInterval(function(){ getGlobalItems(); }, 1000);
-                console.log('[' + curr_ts + '] Restarting getGlobalItems');
-            }
-        }
+
+        getGlobalItems();
+        redrawList();
     }
 }
 function loadMomentIfRequired( override ) {
@@ -364,6 +352,7 @@ function parseMyToken( data ) {
         }
         setSplashMessage('Collecting Timeline Data');
         showTimelines();
+        redrawList();
     }
 }
 function getAuthorisation() {
@@ -568,7 +557,7 @@ function checkIfRepeat( text ) {
         saveStorage('msgText', 'This post looks like your last one.<br>' +
                                ' Give me a moment. ADN might be slow.', true);
         if ( constructDialog('okbox') ) { toggleClassIfExists('okbox','hide','show'); }
-    } 
+    }
     return ( text !== last_posttext );
 }
 function buildJSONPost( text, in_reply_to ) {
@@ -593,7 +582,7 @@ function buildJSONPost( text, in_reply_to ) {
                                                 }
                                     });
                         break;
-                    
+
                     default:
                         oembed.push({ "type": window.files[idx].anno,
                                       "value": { "+net.app.core.file": { "file_id": window.files[idx].id,
@@ -616,7 +605,7 @@ function buildJSONPost( text, in_reply_to ) {
                                      "tstamp": (Date.now() | 0)
                                     }
                         });
-            
+
             /* Build the Public-facing Post */
             text = '';
             if ( post_title !== '' ) {
@@ -648,7 +637,7 @@ function buildJSONPost( text, in_reply_to ) {
             text: text,
             entities: {
                 parse_markdown_links: true,
-                parse_links: true             
+                parse_links: true
             }
         };
         if ( oembed !== false ) { params['annotations'] = oembed; }
@@ -705,13 +694,13 @@ function parseUserUsage( data ) {
             col_pct = ((ds[i].post_count + ds[i].broadcasts) / col_max) * 100;
             pst_max = ((ds[i].post_count + ds[i].broadcasts) <= 0 ) ? 1 : (ds[i].post_count + ds[i].broadcasts);
             num_txt = (ds[i].post_count + ds[i].broadcasts) + (((ds[i].post_count + ds[i].broadcasts) === 1) ? ' post' : ' posts');
-            
+
             html += '<span class="item" style="height: ' + col_pct + '%;" title="' + num_txt + '">' +
                         '<red style="height: ' + ((ds[i].broadcasts / pst_max) * 100) + '%;">&nbsp;</red>' +
                         '<blue>&nbsp;</blue>' +
                     '</span>';
         }
-        
+
         if ( readStorage('display_nrscore') === 'Y' ) { document.getElementById( 'history-score' ).innerHTML = 'NiceRank Score: ' + data.nicerank; }
         if ( readStorage('display_usage') === 'Y' ) {
             if ( html != '' ) { document.getElementById( 'history-bars' ).innerHTML = html; }
@@ -734,10 +723,10 @@ function getUserProfileActions( data ) {
                     '<li id="profile-drop" class="hide" onclick="toggleProfileDrop();">' +
                         '<i class="fa fa-cog"></i>' +
                         '<ul>' +
-                            '<li onClick="blockAccount(' + data.you_blocked + ', ' + data.id + ');">' + 
-                                ((data.you_blocked) ? getLangString('unblock') : getLangString('block')) + 
+                            '<li onClick="blockAccount(' + data.you_blocked + ', ' + data.id + ');">' +
+                                ((data.you_blocked) ? getLangString('unblock') : getLangString('block')) +
                             '</li>' +
-                            '<li onClick="muteAccount(' + data.you_muted + ', ' + data.id + ');">' + 
+                            '<li onClick="muteAccount(' + data.you_muted + ', ' + data.id + ');">' +
                                 ((data.you_muted) ? getLangString('unmute') : getLangString('mute')) +
                             '</li>' +
                             '<li onClick="reportAccount(' + data.id + ');">' + getLangString('spammer') + '</li>' +
@@ -797,7 +786,7 @@ function parseUserProfile( data ) {
                 } else {
                     action_html = '&nbsp;';
                 }
-                
+
             } else {
                 action_html += '<span>' + getLangString('is_you') + '</span>';
             }
@@ -857,20 +846,9 @@ function getMentions() {
             access_token: access_token,
             include_html: 1,
             count: 50
-        }; 
+        };
         doJSONQuery( '/users/me/mentions', false, 'GET', params, parseItems, '' );
     }
-}
-function canRefreshGlobal() {
-    var rrate = parseInt(readStorage('refresh_rate')),
-        rlast = parseInt(readStorage('refresh_last', true));
-    var seconds = new Date().getTime() / 1000;
-    if ( rlast === undefined || isNaN(rlast) ) { rlast = 0; }
-    if ( (seconds-rlast) >= rrate ) {
-        saveStorage('refresh_last', seconds, true);
-        return true;
-    }
-    return false;
 }
 function getGlobalRecents( since_id ) {
     if ( since_id === undefined || isNaN(since_id) ) { since_id = 0; }
@@ -916,7 +894,6 @@ function parseSinceID( meta ) {
 }
 function getGlobalItems() {
     if ( window.activate === false ) { return false; }
-    if ( canRefreshGlobal() === false ) { return false; }
     if ( readStorage('adn_action', true) === 'Y' ) { return false; }
     var ts = new Date().getTime();
     saveStorage('last_global_query', ts, true);
@@ -929,13 +906,16 @@ function getGlobalItems() {
         include_muted: 1,
         include_html: 1,
         since_id: readStorage( 'since', true),
-        count: 200        
+        count: 200
     };
     if ( access_token !== false ) { params.access_token = access_token; }
     saveStorage('adn_action', 'Y', true);
     doJSONQuery( '/posts/stream/global', false, 'GET', params, parseItems, '' );
     getInteractions();
     getPMUnread();
+
+    redrawList();
+    window.setTimeout(getGlobalItems, readStorage('refresh_rate') * 1000)
 }
 function parseMeta( meta ) {
     var rVal = false;
@@ -1036,7 +1016,7 @@ function buildHTMLSection( post ) {
         repost_by = '';
     var data = post;
     var _html = '';
-    
+
     // Is this Machine-Only?
     if ( data.machine_only === true ) { return ''; }
 
@@ -1046,7 +1026,7 @@ function buildHTMLSection( post ) {
         repost_by = ' <i style="float: right;">(<i class="fa fa-retweet"></i> ' + post.user.username + ')</i>';
         is_repost = true;
     }
-    
+
     // Do We Have No Text Object?
     if ( data.text === undefined ) { return ''; }
 
@@ -1206,7 +1186,7 @@ function parseText( post ) {
             html = html.replace(searchRegex, cStr + ' onClick="doShowHash(\'' + post.entities.hashtags[i].name + '\');"$1');
         }
     }
-    
+
     /* Do Any of the HTML Links Need to be Changed? */
     if ( post.entities.links.length > 0 ) {
         for ( var i = 0; i < post.entities.links.length; i++ ) {
@@ -1340,7 +1320,7 @@ function redrawList() {
     if ( counter > 0 && counter <= 5 ) {
         saveStorage( '_refresher', (counter + 1), true);
         return false;
-    } else { 
+    } else {
         saveStorage( '_refresher', '1', true);
     }
 
@@ -1352,6 +1332,7 @@ function redrawList() {
 
         if ( _home === 'Y' && _ment === 'Y' ) { setSplashMessage(''); }
         window.activate = true;
+        redrawList();
     }
 
     /* Draw the SoundCloud Items (If Required) */
@@ -1466,7 +1447,7 @@ function redrawPosts() {
                 you_muted = (window.coredata['net.app.global'][post_id].user.id === my_id) ? false : window.coredata['net.app.global'][post_id].user.you_muted;
                 if ( you_muted === undefined ) { you_muted = false;}
                 postText = '';
-                
+
 
                 if ( window.timelines.home ) {
                     if ( checkElementExists(post_id + '-h') === false ) {
@@ -1476,7 +1457,7 @@ function redrawPosts() {
                                 if ( postText === '' ) { postText = getPostText(post_id); }
                                 if ( postText !== '' ) {
                                     document.getElementById('home').insertBefore( buildNode(post_id, '-h',
-                                                                                            action_at, 'post', 
+                                                                                            action_at, 'post',
                                                                                             postText.replaceAll('[TL]', '-h', ''),
                                                                                             account),
                                                                                   document.getElementById(last_id) );
@@ -1574,7 +1555,7 @@ function getPreviousElementByTime( time_str, timeline, tl_ref ) {
     var comTime = new Date( time_str );
     for ( var idx = 0; idx < elems.children.length; idx++ ) {
         if ( idx >= (c_max - 5) ) { return '0' + tl_ref; }
-        var objTime = new Date( $('#' + elems.children[idx].id).data("content") );        
+        var objTime = new Date( $('#' + elems.children[idx].id).data("content") );
         if ( objTime < comTime ) { return elems.children[idx].id; }
     }
     return '0' + tl_ref;
@@ -1588,7 +1569,7 @@ function setWindowConstraints() {
     var sWidth = window.innerWidth || document.body.clientWidth;
     var cWidth = 0,
         vCols = 1;
-        
+
     if ( document.getElementById('tl-space').innerHTML === '' ) { return false; }
 
     for (i in window.timelines) {
@@ -1682,7 +1663,7 @@ function constructDialog( dialog_id ) {
         case 'autocomp':
             _html = '';
             break;
-        
+
         case 'channel':
             dialog_id = 'conversation';
             _html = '<div class="chatbox">' +
@@ -1785,11 +1766,11 @@ function constructDialog( dialog_id ) {
 }
 function dismissOKbox() {
     document.getElementById('okbox').innerHTML = '';
-    toggleClass('okbox','show','hide');        
+    toggleClass('okbox','show','hide');
 }
 function doShowChan( chan_id ) {
     if ( chan_id === '' || chan_id === undefined ) {
-        toggleClass('channel','show','hide');        
+        toggleClass('channel','show','hide');
     } else {
         toggleClassIfExists('channel','hide','show');
         if ( constructDialog('channel') ) {
@@ -1864,7 +1845,7 @@ function buildRespondBar( post, is_convo ) {
     var css_s = ( post.you_starred ) ? 'highlight' : 'plain';
     var icn_s = ( post.you_starred ) ? 'fa-star' : 'fa-star-o';
     if ( is_convo !== true ) { is_convo = false; }
-    
+
     var post_id = post.id;
     if ( post.hasOwnProperty('repost_of') ) { post_id = post.repost_of.id; }
 
@@ -1926,7 +1907,7 @@ function getAccountNames( ids ) {
 
         var params = {
             access_token: access_token,
-            ids: id_list 
+            ids: id_list
         };
         doJSONQuery( '/users', false, 'GET', params, parseAccountNames, '' );
     }
@@ -1941,7 +1922,7 @@ function updateTimestamps() {
                     var itms = document.getElementsByName( post_id + "-time" );
                     var tStr = humanized_time_span( window.coredata['net.app.global'][post_id].created_at ),
                         html = '';
-        
+
                     for ( var i = 0; i < itms.length; i++ ) {
                         html = document.getElementById( itms[i].id ).innerHTML;
                         if ( html != tStr ) { document.getElementById( itms[i].id ).innerHTML = tStr; } else { break; }
@@ -1953,11 +1934,11 @@ function updateTimestamps() {
                     var itms = document.getElementsByName( post_id + "-time" );
                     var tStr = humanized_time_span( window.coredata['net.app.core.pm'][post_id].recent_message.created_at ),
                         html = '';
-    
+
                     for ( var i = 0; i < itms.length; i++ ) {
                         html = document.getElementById( itms[i].id ).innerHTML;
                         if ( html != tStr ) { document.getElementById( itms[i].id ).innerHTML = tStr; } else { break; }
-                    }            
+                    }
             }
         }
         if ( window.timelines.interact || im_blend === 'Y' ) {
@@ -1984,6 +1965,7 @@ function collectRankSummary() {
     setSplashMessage('Collecting NiceRank Scores');
     var params = { nicerank: 0.1 };
     doJSONQuery( '/user/nicesummary', true, 'GET', params, parseRankSummary, parseRankSummary );
+    window.setTimeout(collectRankSummary, 60*60*1000);
 }
 function parseRankSummary( data ) {
     if ( data ) {
@@ -2113,7 +2095,7 @@ function setFollow( data ) {
     }
 }
 function doShowConv( post_id ) {
-    if ( post_id === '' || post_id === undefined ) {  
+    if ( post_id === '' || post_id === undefined ) {
         toggleClass('conversation','show','hide');
     } else {
         toggleClassIfExists('conversation','hide','show');
@@ -2201,7 +2183,7 @@ function parseConversation( data ) {
             if ( show_ids.indexOf(this_id) >= 0 ) { show_ids.push(parseInt(data[i].reply_to)); }
             if ( show_ids.indexOf(this_id) < 0 ) { sname = ' post-minimum'; }
             if ( this_id === reply_to || this_id === post_id ) { sname = ' post-grey'; }
-            
+
             if ( show_ids.indexOf(this_id) >= 0 ) {
                 if ( post_min > 0 ) {
                     var lbl = (( post_cnt == 1 ) ? ' Post' : ' Posts');
@@ -2328,7 +2310,7 @@ function showHideResponse() {
         toggleClassIfExists('autocomp','show','hide');
         removeClassIfExists('rpy-box', 'longpost');
         removeClassIfExists('rpy-box', 'pm');
-        toggleClass('response','show','hide');        
+        toggleClass('response','show','hide');
         saveStorage('in_reply_to', '0');
         saveStorage('is_quote', 'N', true);
     }
@@ -2512,7 +2494,7 @@ function parseEmbedded( post ) {
                                     _vidid = _vidid.replace(_blanks[itm], '');
                                     _vidid = _vidid.substring(0, _vidid.indexOf('&') != -1 ? _vidid.indexOf('&') : _vidid.length);
                                 }
-        
+
                                 if ( post.annotations[i].value.track || false ) {
                                     if ( _innerHTML != '' ) { _innerHTML += ' - '; }
                                     _innerHTML += post.annotations[i].value.track;
@@ -2548,13 +2530,13 @@ function doShowUserByName( user_name ) {
                 break;
             }
         }
-    }    
+    }
 }
 function doShowUser( user_id ) {
     if ( user_id === '' || user_id === undefined ) {
         toggleClass('dialog','show','hide');
     } else {
-        toggleClassIfExists('dialog','hide','show');        
+        toggleClassIfExists('dialog','hide','show');
         if ( constructDialog('dialog') ) {
             showWaitState('user_posts', 'Collecting User Information');
             getUserProfile( user_id );
@@ -2615,10 +2597,10 @@ function parseHashDetails( data ) {
         for ( var i = 0; i < data.length; i++ ) {
             showWaitState('hash_posts', 'Reading Posts (' + (i + 1) + '/' + data.length + ')');
             nicerank = ( readStorage('nice_proxy') === 'Y' ) ? data[i].nicerank : parseInt( readStorage( data[i].user.id + '_rank', true) );
-            
+
             if ( nicerank >= 1.75 ) {
                 respond = buildRespondBar( data[i] );
-    
+
                 followed = data[i].user.you_follow || (data[i].user.id === my_id) || false;
                 post_by = data[i].user.username;
                 post_reposted = data[i].you_reposted || false;
@@ -2657,13 +2639,13 @@ function parseHashDetails( data ) {
             }
         }
         document.getElementById( 'hash_posts' ).innerHTML = html;
-        toggleClassIfExists('hashbox','hide','show');        
+        toggleClassIfExists('hashbox','hide','show');
     }
 }
 function getReplyCharCount() {
     var post_text = document.getElementById( 'rpy-text' ).value.trim();
         post_text = post_text.replace(/([^"])(https?:\/\/([^\s"]+))/g, '').replace('[', '').replace(']', '');
-    return post_text.length;        
+    return post_text.length;
 }
 function calcReplyCharacters() {
     var max_length = parseInt( readStorage('post_length', true) ),
@@ -2688,7 +2670,7 @@ function calcReplyCharacters() {
         if ( rpy_length == max_length ) { toggleClassIfExists('rpy-send','btn-green','btn-grey'); }
     } else {
         addClass('rpy-length','red');
-        toggleClassIfExists('rpy-send','btn-green','btn-grey');        
+        toggleClassIfExists('rpy-send','btn-green','btn-grey');
     }
 }
 function doMuteHash( name ) { muteHashtag(name); }
@@ -2710,9 +2692,9 @@ function saveDraft() {
     showSaveDraft();
 }
 function getCaretPos(el) {
-    if (el.selectionStart) { 
-        return el.selectionStart; 
-    } else if (document.selection) { 
+    if (el.selectionStart) {
+        return el.selectionStart;
+    } else if (document.selection) {
         el.focus();
         var r = document.selection.createRange();
         if (r == null) { return 0; }
@@ -3016,7 +2998,7 @@ function humanized_time_span(date, ref_date, date_formats, time_units) {
         [60, 'minutes'],
         [1, 'seconds']
     ];
-  
+
     date = new Date(date);
     ref_date = ref_date ? new Date(ref_date) : new Date();
     var seconds_difference = (ref_date - date) / 1000;
@@ -3127,8 +3109,8 @@ function isMutedItem( post_id ) {
         return 'Unknown Client';
     }
     var name = window.coredata['net.app.global'][post_id].source.name.trim();
-    for ( var idx = 0; idx <= clients.length; idx++ ) { 
-        if ( clients[idx] === name ) { 
+    for ( var idx = 0; idx <= clients.length; idx++ ) {
+        if ( clients[idx] === name ) {
             var mm = getLangString('muted_client');
             return ( hide_muted === 'Y' ) ? true : mm.replaceAll('[NAME]', name);
         }
@@ -3223,7 +3205,7 @@ function showHidePostsFromAccount( account_id, hide ) {
             if ( window.timelines.hasOwnProperty(i) ) {
                 if ( window.timelines[i] ) {
                     var elems = document.getElementById(i);
-                    if ( elems !== null || elems !== undefined ) { 
+                    if ( elems !== null || elems !== undefined ) {
                         for ( var idx = 0; idx < elems.children.length; idx++ ) {
                             var acct_id = $('#' + elems.children[idx].id).data("account");
                             if ( acct_id === account_id ) {
@@ -3280,7 +3262,7 @@ function setCSSPreferences() {
     jss.set('div#userlist.post-list.tl-userlist .post-item .pulse-content', { 'background-color': '#' + readStorage('post-highlight_color') });
     jss.set('div#userlist.post-list.tl-userlist .post-item .pulse-content', { 'color': '#' + readStorage('post-content_color') });
     jss.set('div#userlist.post-list.tl-userlist .post-item .numbers', { 'color': '#' + readStorage('post-content_color') });
-    
+
     jss.set('.post-list .post-item .post-avatar, .chat-list .post-item .post-avatar', {
         'display': (( readStorage('hide_avatars') === 'Y' ) ? 'none' : 'inline-block')
     });
@@ -3410,7 +3392,7 @@ function showUserList( type, account_id ) {
             access_token: access_token,
             include_html: 0,
             count: 200
-        }; 
+        };
         doJSONQuery( '/users/' + account_id + '/' + type, false, 'GET', params, parseUserList, '' );
     }
 }
